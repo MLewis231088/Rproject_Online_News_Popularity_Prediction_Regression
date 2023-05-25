@@ -1,0 +1,957 @@
+---
+title: "Regression of Online News Popularity"
+author: "Malvica Philomina Lewis"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    theme: darkly
+    toc_depth: 5
+    number_sections: yes
+    df_print: paged
+    keep_md: no
+    self_contained: no
+    toc_float:
+      collapsed: yes
+  word_document:
+    toc: yes
+    toc_depth: '5'
+  pdf_document:
+    toc: yes
+    toc_depth: '5'
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Regression
+
+#### About the Data
+
+The collection of data included in this dataset pertains to numerous characteristics associated with articles published by Mashable during a span of two years. The aim is to forecast the number of shares (popularity) the articles will receive on social media platforms.
+
+Data Source:
+
+<http://archive.ics.uci.edu/ml/datasets/Online+News+Popularity>
+
+#### Attributes and Target Description
+
+| ID  | Fields                            | Description                                                                       |
+|-----|-----------------------------------|-----------------------------------------------------------------------------------|
+| 1   | **url**                           | URL of the article (non-predictive)                                               |
+| 2   | **timedelta**                     | Days between the article publication and the dataset acquisition (non-predictive) |
+| 3   | **n_tokens_title**                | Number of words in the title                                                      |
+| 4   | **n_tokens_content**              | Number of words in the content                                                    |
+| 5   | **n_unique_tokens**               | Rate of unique words in the content                                               |
+| 6   | **n_non_stop_words**              | Rate of non-stop words in the content                                             |
+| 7   | **n_non_stop_unique_tokens**      | Rate of unique non-stop words in the content                                      |
+| 8   | **num_hrefs**                     | Number of links                                                                   |
+| 9   | **num_self_hrefs**                | Number of links to other articles published by Mashable                           |
+| 10  | **num_imgs**                      | Number of images                                                                  |
+| 11  | **num_videos**                    | Number of videos                                                                  |
+| 12  | **average_token_length**          | Average length of the words in the content                                        |
+| 13  | **num_keywords**                  | Number of keywords in the metadata                                                |
+| 14  | **data_channel_is_lifestyle**     | Is data channel 'Lifestyle'?                                                      |
+| 15  | **data_channel_is_entertainment** | Is data channel 'Entertainment'?                                                  |
+| 16  | **data_channel_is_bus**           | Is data channel 'Business'?                                                       |
+| 17  | **data_channel_is_socmed**        | Is data channel 'Social Media'?                                                   |
+| 18  | **data_channel_is_tech**          | Is data channel 'Tech'?                                                           |
+| 19  | **data_channel_is_world**         | Is data channel 'World'?                                                          |
+| 20  | **kw_min_min**                    | Worst keyword (min shares)                                                        |
+| 21  | **kw_max_min**                    | Worst keyword (max shares)                                                        |
+| 22  | **kw_avg_min**                    | Worst keyword (avg shares)                                                        |
+| 23  | **kw_min_max**                    | Best keyword (min shares)                                                         |
+| 24  | **kw_max_max**                    | Best keyword (max shares)                                                         |
+| 25  | **kw_avg_max**                    | Best keyword (avg shares)                                                         |
+| 26  | **kw_min_avg**                    | Average keyword (min shares)                                                      |
+| 27  | **kw_max_avg**                    | Average keyword (max shares)                                                      |
+| 28  | **kw_avg_avg**                    | Average keyword (avg shares)                                                      |
+| 29  | **self_reference_min_shares**     | Min. shares of referenced articles in Mashable                                    |
+| 30  | **self_reference_max_shares**     | Max. shares of referenced articles in Mashable                                    |
+| 31  | **self_reference_avg_shares**     | Avg. shares of referenced articles in Mashable                                    |
+| 32  | **weekday_is_monday**             | Was the article published on a Monday?                                            |
+| 33  | **weekday_is_tuesday**            | Was the article published on a Tuesday?                                           |
+| 34  | **weekday_is_wednesday**          | Was the article published on a Wednesday?                                         |
+| 35  | **weekday_is_thursday**           | Was the article published on a Thursday?                                          |
+| 36  | **weekday_is_friday**             | Was the article published on a Friday?                                            |
+| 37  | **weekday_is_saturday**           | Was the article published on a Saturday?                                          |
+| 38  | **weekday_is_sunday**             | Was the article published on a Sunday?                                            |
+| 39  | **is_weekend**                    | Was the article published on the weekend?                                         |
+| 40  | **LDA_00**                        | Closeness to LDA topic 0                                                          |
+| 41  | **LDA_01**                        | Closeness to LDA topic 1                                                          |
+| 42  | **LDA_02**                        | Closeness to LDA topic 2                                                          |
+| 43  | **LDA_03**                        | Closeness to LDA topic 3                                                          |
+| 44  | **LDA_04**                        | Closeness to LDA topic 4                                                          |
+| 45  | **global_subjectivity**           | Text subjectivity                                                                 |
+| 46  | **global_sentiment_polarity**     | Text sentiment polarity                                                           |
+| 47  | **global_rate_positive_words**    | Rate of positive words in the content                                             |
+| 48  | **global_rate_negative_words**    | Rate of negative words in the content                                             |
+| 49  | **rate_positive_words**           | Rate of positive words among non-neutral tokens                                   |
+| 50  | **rate_negative_words**           | Rate of negative words among non-neutral tokens                                   |
+| 51  | **avg_positive_polarity**         | Avg. polarity of positive words                                                   |
+| 52  | **min_positive_polarity**         | Min. polarity of positive words                                                   |
+| 53  | **max_positive_polarity**         | Max. polarity of positive words                                                   |
+| 54  | **avg_negative_polarity**         | Avg. polarity of negative words                                                   |
+| 55  | **min_negative_polarity**         | Min. polarity of negative words                                                   |
+| 56  | **max_negative_polarity**         | Max. polarity of negative words                                                   |
+| 57  | **title_subjectivity**            | Title subjectivity                                                                |
+| 58  | **title_sentiment_polarity**      | Title polarity                                                                    |
+| 59  | **abs_title_subjectivity**        | Absolute subjectivity level                                                       |
+| 60  | **abs_title_sentiment_polarity**  | Absolute polarity level                                                           |
+| 61  | **shares**                        | Number of shares (target)                                                         |
+
+**Loading the necessary libraries**
+
+```{r}
+options(repos = "https://cran.rstudio.com")
+
+install.packages("caret")
+install.packages("rpart.plot")
+library(caret)
+```
+
+```{r}
+
+# Loading libraries
+
+load.libraries <- c('data.table', 'testthat', 'gridExtra', 'corrplot', 'GGally', 'ggplot2', 'e1071', 'dplyr','tidyverse', 'ggmap','tidygeocoder','ggthemes','ggthemr','Hmisc','mapview', 'sf', 'scales','wesanderson','RColorBrewer','naniar', 'glmnet', 'car','ggcorrplot','rpart.plot','mlr','plotly','class')
+
+install.lib <- load.libraries[!load.libraries %in% installed.packages()]
+for(libs in install.lib) install.packages(libs, dependences = TRUE)
+
+sapply(load.libraries, require, character = TRUE)
+
+```
+
+## Exploratory Data Analysis
+
+```{r}
+
+df <- read.csv("../Data/OnlineNewsPopularity.csv", header=TRUE)
+
+head(df)
+```
+
+### Dimension of the data
+
+The dim() displays the number of rows (instances) and columns (features) in the dataset.
+
+```{r}
+# Finding the dimension of the data
+dim(df)
+```
+
+There are 39644 instances and 61 features in the dataset.
+
+### Describing the data
+
+The describe() displays the number of missing values, lowest and highest value, frequency of values of every feature.
+
+```{r}
+
+describe(df)
+
+```
+
+```{r}
+
+summary(df)
+
+```
+
+From the summary, we can see that many features such as n_tokens_content, n_unique_tokens, n_non_stop_words, n_non_stop_unique_tokens, kw_max_min, kw_avg_min, kw_min_max, kw_max_avg have outliers beyond the third quartile range.
+
+### Removing irrelevant columns
+
+For this regression task, we'll remove the url and timedelta columns as they are not much useful in predicting the output.
+
+```{r}
+
+df <- subset(df, select = -c(url, timedelta))
+
+```
+
+### Viewing distribution of data
+
+```{r}
+
+hist.data.frame(df)
+```
+
+From the histogram plots, we can clearly see that only 2 -3 features have a near normal distribution. Rest of them are highly skewed.
+
+### Determining unique values
+
+```{r}
+
+list_unique <- lapply(df, unique)    # List with unique values
+# list_unique 
+
+```
+
+### Visualizing missing data for all columns
+
+Let's create a function to transform the dataframe to a binary TRUE/FALSE matrix and then visualize it using a barplot in R.
+
+```{r}
+# function convert dataframe to binary TRUE/FALSE matrix
+toBinaryMatrix <- function(df){
+                                    m <- c()
+                                    for(i in colnames(df)){
+                                                          x <- sum(is.na(df[,i]))
+                                                          # missing value count
+                                                          m <- append(m,x)
+                                                          # non-missing value count
+                                                          m <- append(m,nrow(df)-x) 
+                                                          }
+  
+                                    # adding column and row names to matrix
+                                    a <- matrix(m,nrow=2)
+                                    rownames(a) <- c("TRUE","FALSE")
+                                    colnames(a) <- colnames(df)
+  
+                                    return(a)
+                                }
+  
+# function call
+binMat = toBinaryMatrix(df)
+# binMat
+```
+
+```{r}
+# stacked barplot for missing data in all columns
+plt1 <- barplot(binMat,
+        main = "Missing values in all features", xlab = "Frequency",
+        col = c("#4dffd2","#ff9999"),
+        las=2)
+
+plt1 + coord_flip()
+
+  
+# legend for barplot
+legend("bottomright",
+      c("Missing values","Non-Missing values"),
+      fill = c("#4dffd2","#ff9999"))
+```
+
+There are no missing values in the dataset.
+
+### Visualizing the outliers in all the columns using the boxplot()
+
+```{r}
+# Filtering only numerical columns
+
+ggthemr("grape")
+
+
+# Visualizing the outliers in all the columns using the boxplot()
+ggplot(stack(df), aes(x = ind, y = values)) +
+  stat_boxplot(geom = "errorbar", width = 0.5) +
+  labs(x="Numerical Features", y="Frequency") +
+  geom_boxplot(fill = "white", colour = "#3366FF") +
+  labs(title = 'Outliers in all the numerical features')+
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(angle = 90, 
+                                   hjust = 0.3, 
+                                   vjust = 0.3))
+
+
+```
+
+From the boxplot, we can clearly see that more than 10 columns (including the target variable) have outliers.
+
+#### Verifying outliers using z-scores
+
+calculating the z-score of each value in each column in the dataframe, and then eliminating rows having at least one z-score with an absolute value greater than 3.
+
+```{r}
+
+z_scores <- as.data.frame(sapply(df, function(df) (abs(df-mean(df))/sd(df))))    
+
+no_outliers <- z_scores[!rowSums(z_scores>3), ]
+head(no_outliers)
+
+```
+
+```{r}
+
+cat("The total number of instances are:", dim(df)[1], "\n")
+cat("The total number of instances without outliers are:", dim(no_outliers)[1], "\n")
+
+cat("The total number of instances with outliers are:", dim(df)[1] - dim(no_outliers)[1], "\n")
+
+```
+
+There are 18635 outliers in the entire dataset. This corresponds to approximately 47%. These outliers are also useful. Removing outliers will remove the variability in the data. Instead of removing the rows having outliers, we can clip the very extreme values to upper band of interquartile range (IQR) (Q2 + 1.5(Q3-Q1)) and lower band of IQR (Q1 - 1.5(Q3-Q1).
+
+### Detecting correlated features
+
+Before the data is trained using a machine learning model, the data must not have correlated features.
+
+```{r}
+
+res = cor(df)
+res
+
+
+```
+
+We can calculate p-value to see whether the correlation is significant.
+
+```{r}
+
+p_value <- rcorr(as.matrix(res))
+
+p_value
+
+```
+
+The smaller the p-value, the more significant the correlation. Many features are correlated with each other. This is one of the limitations of a linear regression model. We need to remove the features that are correlated. Let's now visually look at the correlation.
+
+#### Visualizing correlation
+
+```{r fig.width = 20,fig.height = 15}
+
+corrplot(res, type = "upper", order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+
+
+
+```
+
+The stronger the color and the bigger the size, the higher the correlation. Many features are highly correlated both positively and negatively. We can remove these features during the feature selection stage.
+
+### Visualizing the scatterplot of all features with the target
+
+```{r}
+scatterplot_features_target <- function(df, target_col_name) {
+  # get the column names of the features
+  feature_col_names <- setdiff(names(df), target_col_name)
+  
+  # loop through each feature and create a scatterplot with the target variable
+  for (feature_col_name in feature_col_names) {
+    plot(df[[feature_col_name]], 
+         df[[target_col_name]], 
+         main = paste(feature_col_name, "vs", target_col_name), 
+         xlab = feature_col_name, 
+         ylab = target_col_name,
+         col = "darkgreen")
+  }
+}
+
+```
+
+```{r}
+scatterplot_features_target(df, "shares")
+```
+
+Very few features have linear relationship with the target variable.
+
+### Viewing the distribution of features
+
+```{r}
+
+hist(df$n_tokens_title, main = "Distribution of Number of Words in Title", col = "#69b3a2", las = 2)
+
+```
+
+The distribution of number of words in title is normally distributed.
+
+```{r}
+
+hist(df$n_tokens_content, main = "Distribution of Number of Words in Content", col = "#69b3a2", las = 2)
+
+```
+
+But the distribution of number of words in the content are right-skewed.
+
+### Viewing the normality of features
+
+```{r}
+qqplot_features_target <- function(df, target_col_name) {
+  # get the column names of the features
+  feature_col_names <- setdiff(names(df), target_col_name)
+  
+  # loop through each feature and create a Q-Q plot with the target variable
+  for (feature_col_name in feature_col_names) {
+    qqnorm(df[[feature_col_name]], 
+           main = paste(feature_col_name, "vs", target_col_name), 
+           col = "blue")
+    qqline(df[[feature_col_name]])
+  }
+}
+
+```
+
+In this function, setdiff() is used to exclude the target column from the list of feature columns. The for loop goes through each feature column, and the qqnorm() function is called to create a Q-Q plot with the target variable. The qqline() function is also called to add a reference line to the plot.
+
+```{r}
+qqplot_features_target(df, "shares")
+
+```
+
+Most of the features are not normally distributed. Thus, we need to transform the features before feeding them to a linear regression model.
+
+## Feature Selection
+
+This dataset contains 61 features. We need to select features which are correlated with the target variable and remove the ones which are correlated with other features.
+
+Feature selection is an important step in machine learning algorithms because it helps to reduce the dimensionality of the input data and remove irrelevant or redundant features that may negatively impact the performance of the model. There are several reasons why feature selection is necessary:
+
+1.  Improved Model Performance: By selecting only relevant features, the model's accuracy and efficiency can be improved. This is because irrelevant features can add noise to the model, leading to overfitting and poor generalization.
+
+2.  Reduced Overfitting: Feature selection helps to avoid overfitting by removing redundant features that contain similar information. When too many features are included in the model, it can become too complex and fit the training data too closely, resulting in poor performance on new, unseen data.
+
+3.  Faster Training and Inference: Removing unnecessary features also reduces the computational cost of training and testing the model. This can lead to faster inference times and lower memory requirements.
+
+4.  Better Interpretability: By selecting the most important features, the model becomes more interpretable, and it becomes easier to understand which features are driving the predictions.
+
+Overall, feature selection helps to improve the quality of the model, making it more accurate, efficient, and interpretable.
+
+Using the nearZeroVar() function from caret library, we can identify the features which have low variance. Low variance features are those that have very little variation or almost no variability in their values across the different samples or observations in the dataset. These features may not be useful for predictive modeling purposes since they do not provide much information to distinguish between different classes or groups in the data.
+
+The nearZeroVar() function takes a dataset as input and returns a logical vector indicating which features have low variance. By default, it considers any feature that has 10% or less unique values.
+
+```{r}
+
+df_copy <- df
+
+y <- df_copy$shares
+x <- df_copy[, -1]
+
+dim(df_copy)
+dim(x)
+str(y)
+```
+
+```{r}
+
+cols_to_remove <- nearZeroVar(x, names = TRUE, 
+                           freqCut = 2, uniqueCut = 20)
+
+cols_to_remove
+```
+
+```{r}
+
+# Get all column names from x: all_cols
+all_cols <- names(x)
+
+# Remove from data: bloodbrain_x_small
+x_sel_features <- x[ , setdiff(all_cols, cols_to_remove)]
+
+dim(x)
+dim(x_sel_features)
+
+```
+
+Now, we have only 30 features which have high importance in predicting the target variable.
+
+## Feature Scaling
+
+Since, all the 30 features are numerical and each attribute has different ranges, it is always recommended to scale the features before feeding the data to machine learning algorithms.
+
+```{r}
+
+data <- cbind(x_sel_features, y)
+
+preproc <- preProcess(data, method = c("center", "scale"))
+data_scaled <- predict(preproc, data)
+
+```
+
+It is not necessary to scale the target variable before training a model, as the scaling of the target variable does not affect the model's predictions. However, it can sometimes be useful to scale the target variable for certain types of models or analyses.
+
+As we will be using the ridge and lasso regularization techniques, scaling the target variable can help ensure that the penalty term is applied fairly to all features, including the target variable. In this case, we would want to scale both the input features and the target variable.
+
+Similarly, if we are using a model that assumes a certain distribution for the target variable, such as a linear regression model, scaling the target variable can help ensure that the assumptions of the model are met. For example, if the target variable has a large range of values, it may be skewed or have outliers, which can violate the assumptions of normality and homoscedasticity.
+
+In general, scaling the target variable is not required, but it may be useful in certain situations. If we do choose to scale the target variable, we must ensure to do so using the same scaling factor as the input features, to ensure that the scaling is consistent across the entire dataset.
+
+```{r}
+colnames(data_scaled)
+```
+
+## Data Cleaning
+
+Following are the various steps to preprocess data before being fed to machine learning models.
+
+### Modifying column names
+
+```{r}
+# Viewing the column names
+
+names(data_scaled)
+```
+
+All the column names are named appropriately. So, we are not modifying any names.
+
+### Identifying and deleting rows and columns that contain only missing values
+
+```{r}
+df <- data_scaled[rowSums(is.na(data_scaled)) != ncol(data_scaled), ]        # Drop empty rows
+
+```
+
+### Modifying classes of columns
+
+Another crucial aspect of data cleansing is the class of the columns in a data frame. Let's explore the current classes of columns in the dataset.
+
+we can change the column classes with the appropriate ones using the type.convert function:
+
+```{r}
+df <- type.convert(df, as.is = TRUE)
+
+sapply(df, class)
+```
+
+In this dataset, the classes were appropriately categorized.
+
+### Removing unnecessary strings from columns
+
+Since all the features are numerical, there are no strings that should be removed.
+
+### Formatting missing values
+
+In R language, missing values are represented by NA. So, let's convert all missing values in the dataset to this format.
+
+```{r}
+
+df[df == ""] <- NA  
+
+# Sometimes the NA values are formatted as characters instead of real NA values. Let's convert it to NA.
+
+df[df == "NA"] <- NA  
+
+```
+
+### Checking and removing duplicates
+
+Sometimes, the dataset may have duplicated rows. We need to remove duplicates to avoid overfitting of the machine learning model.
+
+```{r}
+
+sum(duplicated(df))
+
+# df <- unique(df)
+
+```
+
+### Converting categorical variables into factors
+
+Another crucial aspect of data cleansing is the class of the columns in a data frame. Let's explore the current classes of columns in the dataset.
+
+```{r}
+sapply(df, class)
+
+# Convert categorical variables to factors
+# df$weekday_is_monday <- as.factor(df$weekday_is_monday)
+
+
+```
+
+As there are no categorical columns, we'll ignore this step
+
+### Imputing missing values
+
+As there are no missing values, we'll ignore this step.
+
+## Saving the cleaned dataset
+
+Now, the data is cleaned and pre-preprocessed. We can feed the cleaned data to various machine learning models and estimate the models performance. Let's save the cleaned data as a dataframe.
+
+```{r}
+
+write.csv(df, "../Data/cleaned_data_reg.csv", row.names=FALSE, quote=FALSE) 
+
+```
+
+## Train-Test Split
+
+Let's import the cleaned dataset.
+
+```{r}
+
+# Importing the cleaned data
+
+df_cleaned_reg <- read.csv("../Data/cleaned_data_reg.csv", header=TRUE)
+```
+
+Using the createDataPartition() from the caret package, let's split the data into train and test data sets. We'll retain 20% of the data as the test set and the remaining 80% as the training data.
+
+```{r}
+# Split data into training and testing sets
+set.seed(123)
+train_index <- createDataPartition(df_cleaned_reg$shares, p = 0.8, list = FALSE)
+
+train_data <- df_cleaned_reg[train_index, ]
+test_data <- df_cleaned_reg[-train_index, ]
+
+dim(train_data)
+dim(test_data)
+
+```
+
+We have 31716 instances in training set and 7928 instances in test set.
+
+## Linear Regression Models
+
+For this dataset, we create the following 3 different linear regression models:
+
+-   Basic Multiple Linear Regression model
+
+-   Ridge Regression model
+
+-   Lasso Regression model
+
+### MODEL 1: Multiple Linear Regression Model
+
+Multiple linear regression is a statistical method that analyzes the linear relationship between a response variable and two or more predictor variables. The model incorporates numerous predictor variables, and the primary objective is to establish the correlation between each of these variables and the response variable, while adjusting for the influence of other variables in the model.
+
+We'll first create a basic multiple linear regression model and evaluate its performance.
+
+#### Building a multiple linear regression model
+
+```{r}
+
+lm_model <- lm(shares ~ ., data = train_data)
+
+```
+
+We can check the summary of the model using the **`summary()`** function:
+
+```{r}
+
+# Check summary of model
+summary(lm_model)
+
+```
+
+This gives us information about the coefficients, standard errors, t-values, and p-values for each predictor variable.
+
+#### Making predictions on the test data
+
+Using the lm() model that we created by training the model with the train dataset, we will now predict the output (shares) by feeding only the attribute values without the target value.
+
+```{r}
+
+# Make predictions on test set
+lm_preds <- predict(lm_model, newdata = test_data)
+
+```
+
+#### Evaluating the performance of multiple linear regression model using RMSE, R-Squared and Adjusted R-Squared on the test set
+
+To evaluate the performance of the model, we can use the root mean squared error (RMSE) and the coefficient of determination (R-squared) and Adjusted R-squared on the test set.
+
+The adjusted R-squared is a modified version of the R-squared metric that takes into account the number of predictor variables in a regression model. While the R-squared value tells us the proportion of the variance in the dependent variable that can be explained by the independent variables in the model, it can be misleading if we add more variables to the model that do not improve the model's predictive power.
+
+The adjusted R-squared addresses this issue by penalizing the R-squared value for the addition of unnecessary variables. It is calculated as:
+
+Adjusted R-squared = 1 - [(1 - R\^2) \* (n - 1) / (n - p - 1)]
+
+where n is the number of observations and p is the number of predictor variables in the model. The adjusted R-squared value is always lower than the R-squared value, and it provides a more accurate indication of the model's predictive power.
+
+In summary, the adjusted R-squared is used to assess the goodness of fit of a regression model while taking into account the number of predictor variables in the model. It is a useful metric for model selection and helps prevent overfitting by penalizing the model for including unnecessary variables.
+
+```{r}
+
+# Calculate RMSE on test set
+lm_rmse <- RMSE(lm_preds, test_data$shares)
+
+# Calculate R-squared on test set
+lm_r_squared <- R2(lm_preds, test_data$shares)
+
+# Calculate adjusted R-squared on test set
+n <- length(test_data$shares)
+p <- length(lm_model$coefficients) - 1
+lm_adj_r_squared <- 1 - ((1 - summary(lm_model)$r.squared) * (n - 1) / (n - p - 1))
+
+# Print results
+cat("RMSE:", lm_rmse, "\n")
+cat("R-squared:", lm_r_squared, "\n")
+cat("Adjusted R-squared:", lm_adj_r_squared, "\n")
+
+
+```
+
+#### Visualizing the performance of the lm() model
+
+To visualize the performance of the model, we can create a scatter plot of the predicted vs actual shares values on the test set.
+
+```{r}
+
+# Create scatter plot of predicted vs actual values
+lm_plot <- ggplot(data = data.frame(actual = test_data$shares, predicted = lm_preds), aes(x = actual, y = predicted)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", col = "#69b3a2") +
+  labs(title = "Multiple Linear Regression Model", x = "Actual Shares", y = "Predicted Shares")
+
+print(lm_plot)
+
+
+```
+
+This is a scatter plot with the predicted values on the y-axis and actual values on the x-axis. The red dashed line represents a perfect prediction, where the predicted value equals the actual value.
+
+#### Visualizing the residuals of the lm() model
+
+We can also create a histogram of the residuals to check if they are normally distributed.
+
+```{r}
+
+# Create histogram of residuals
+lm_residuals <- test_data$shares - lm_preds
+lm_hist <- ggplot(data = data.frame(residuals = lm_residuals), aes(x = residuals)) +
+  geom_histogram(binwidth = 1000, color = "white", fill = "#69b3a2", alpha = 0.5) +
+  labs(title = "Histogram of Residuals", x = "Residuals")
+
+print(lm_hist)
+
+
+```
+
+Here, we're subtracting the predicted values from the actual values to get the residuals, which represent the difference between the predicted and actual values. The histogram shows the distribution of these residuals.
+
+### MODEL 2: Ridge Regression Model without feature selection
+
+For the multiple linear regression model, we used only 30 features out of 60. For ridge regression model, we will be using all predictor variables in the database.
+
+Ridge regression is a type of regularized linear regression method that adds a penalty term to the regression model's cost function to prevent overfitting. The penalty term is proportional to the square of the magnitude of the coefficients in the regression equation. The objective of ridge regression is to find the values of the regression coefficients that minimize the sum of squared errors between the predicted and actual values of the dependent variable, while also minimizing the size of the coefficients.
+
+Ridge regression is used when there is multicollinearity (high correlation) among the predictor variables in a regression model. Multicollinearity can make it difficult to estimate the regression coefficients accurately, as the coefficients may have large standard errors and become unstable. Ridge regression helps to stabilize the coefficients by adding a penalty term that reduces their magnitudes, and hence, reduces the model's sensitivity to the input variables.
+
+Another benefit of ridge regression is that it can be used to select the most important predictors in a regression model by setting the penalty parameter (lambda) to a value that shrinks some of the coefficients to zero. This is called regularization and it can help prevent overfitting by reducing the model complexity and removing the least important predictors.
+
+#### Checking multicollinearity in predictor variables
+
+To check for multicollinearity in Online News Popularity data using R language with visuals, we can use the vif() function from the car package. This function computes the variance inflation factor (VIF) for each predictor variable in a multiple regression model, which measures the degree of multicollinearity between that variable and the other predictor variables in the model. Generally, a VIF value greater than 5 or 10 indicates significant multicollinearity.
+
+```{r}
+
+# Compute the VIF for each predictor variable
+vif_values <- vif(lm_model)
+
+```
+
+This code fits a multiple linear regression model using all predictor variables in the dataset, computes the VIF values for each predictor variable using the vif() function, and plots the results using a bar plot. The coord_flip() function is used to rotate the plot horizontally for better visualization. The resulting plot shows the VIF values for each predictor variable, and we can use this information to identify any predictor variables that have high multicollinearity with other predictor variables in the model.
+
+```{r}
+
+vif_values <- data.frame(vif_values)
+vif_values
+
+```
+
+```{r}
+
+plot(vif_values, main="VIF Values", ylab="VIF", xlab="Predictor Variables", col = "#69b3a2")
+```
+
+As few predictor variables have multicollinearity with other variables, we'll perform ridge regression.
+
+Let's import the dataset and split the data into train and test sets. We'll set aside 20 percent of the data as test set.
+
+```{r}
+
+df_ridge_lasso <- read.csv("../Data/OnlineNewsPopularity.csv", header=TRUE)
+
+set.seed(123)
+train_index_ridge_lasso <- createDataPartition(df_ridge_lasso$shares, p = 0.8, list = FALSE)
+
+train_data_ridge_lasso <- df_ridge_lasso[train_index_ridge_lasso, ]
+test_data_ridge_lasso <- df_ridge_lasso[-train_index_ridge_lasso, ]
+
+dim(train_data_ridge_lasso)
+dim(test_data_ridge_lasso)
+
+```
+
+Next, we prepare the data for ridge regression by separating the predictor variables (x_train) and target variable (y_train) in the training set. We then fit a ridge regression model using cross-validation and the cv.glmnet() function, setting alpha = 0 to indicate ridge regression. We specify a sequence of lambda values to test using lambda = seq(0.1, 1, by = 0.1) and perform 10-fold cross-validation using nfolds = 10.
+
+```{r}
+
+x_train_ridge_lasso <- as.matrix(train_data_ridge_lasso[, -c(1, 2)])
+y_train_ridge_lasso <- train_data_ridge_lasso$shares
+
+# Fit ridge regression model using cross-validation
+set.seed(123)
+cv_model <- cv.glmnet(x_train_ridge_lasso, y_train_ridge_lasso, alpha = 0, lambda = seq(0.1, 1, by = 0.1), nfolds = 10)
+
+```
+
+We find the optimal lambda value using cv_model\$lambda.min, which corresponds to the lambda value with the minimum cross-validated error. We then fit a final ridge regression model using the optimal lambda value and the glmnet() function.
+
+```{r}
+
+# Find optimal lambda value
+lambda_min <- cv_model$lambda.min
+
+# Fit final ridge regression model using optimal lambda value
+ridge_model <- glmnet(x_train_ridge_lasso, y_train_ridge_lasso, alpha = 0, lambda = lambda_min)
+
+```
+
+We make predictions on the test set using the final ridge regression model and the predict() function, passing in the test set predictor variables as newx.
+
+```{r}
+
+# Make predictions on test set
+x_test_ridge <- as.matrix(test_data_ridge_lasso[, -c(1, 2)])
+ridge_preds <- predict(ridge_model, newx = x_test_ridge)
+
+```
+
+Finally, we calculate the RMSE and R-squared on the test set using the RMSE() and R2() functions from the caret package, respectively, and print the results using cat().
+
+```{r}
+
+# Calculate RMSE and R-squared on test set
+ridge_rmse <- RMSE(ridge_preds, test_data_ridge_lasso$shares)
+ridge_r_squared <- R2(ridge_preds, test_data_ridge_lasso$shares)
+ridge_adj_r_squared <- 1 - ((1 - ridge_r_squared) * (nrow(x_test_ridge) - 1)) / (nrow(x_test_ridge) - ncol(x_test_ridge) - 1)
+
+# Print results
+cat("RMSE:", ridge_rmse, "\n")
+cat("R-squared:", ridge_r_squared, "\n")
+cat("Adjusted R-squared:", ridge_adj_r_squared, "\n")
+
+```
+
+### MODEL 3: Lasso Regression Model without feature selection
+
+Lasso (Least Absolute Shrinkage and Selection Operator) regression is a linear regression method that incorporates L1 regularization to the ordinary least squares (OLS) regression method. Like ridge regression, lasso regression is used for handling the problem of multicollinearity (highly correlated predictor variables), which can lead to overfitting and instability of the estimates in OLS regression.
+
+In lasso regression, the objective function is modified by adding a penalty term that is proportional to the sum of the absolute values of the regression coefficients. This penalty term helps to shrink some of the coefficients towards zero, effectively performing variable selection by setting some of the coefficients exactly equal to zero. This makes lasso regression useful for feature selection and identifying the most important predictors in a model.
+
+The degree of shrinkage is controlled by a tuning parameter lambda (λ), which balances the trade-off between model complexity and goodness of fit. When λ is small, the effect of the penalty is negligible, and the lasso regression coefficients will be similar to those of OLS regression. However, when λ is large, many of the coefficients will be set to zero, leading to a simpler model that can generalize better to new data.
+
+Compared to ridge regression, lasso regression has a tendency to produce sparse models with fewer non-zero coefficients, which can make it easier to interpret the model and reduce overfitting. However, lasso regression is generally less effective than ridge regression in handling multicollinearity when there are many correlated predictors.
+
+Lasso regression can be implemented using various optimization algorithms such as coordinate descent or gradient descent. Cross-validation can be used to select the optimal value of lambda that minimizes the prediction error of the model.
+
+We fit a Lasso regression model using cross-validation and the cv.glmnet() function, setting alpha = 1 to indicate Lasso regression. We specify a sequence of lambda values to test using lambda = seq(0.1, 1, by = 0.1) and perform 10-fold cross-validation using nfolds = 10.
+
+```{r}
+
+# Fit Lasso regression model using cross-validation
+set.seed(123)
+cv_model <- cv.glmnet(x_train_ridge_lasso, y_train_ridge_lasso, alpha = 1, lambda = seq(0.1, 1, by = 0.1), nfolds = 10)
+
+```
+
+We find the optimal lambda value using cv_model\$lambda.min, which corresponds to the lambda value with the minimum cross-validated error. We then fit a final Lasso regression model using the optimal lambda value and the glmnet() function.
+
+```{r}
+
+# Find optimal lambda value
+lambda_min <- cv_model$lambda.min
+
+# Fit final Lasso regression model using optimal lambda value
+lasso_model <- glmnet(x_train_ridge_lasso, y_train_ridge_lasso, alpha = 1, lambda = lambda_min)
+
+```
+
+We make predictions on the test set using the final Lasso regression model and the predict() function, passing in the test set predictor variables as newx.
+
+```{r}
+
+# Make predictions on test set
+x_test_lasso <- as.matrix(test_data_ridge_lasso[, -c(1, 2)])
+lasso_preds <- predict(lasso_model, newx = x_test_lasso)
+
+```
+
+Finally, we calculate the RMSE and R-squared on the test set using the RMSE() and R2() functions from the caret package, respectively, and print the results using cat().
+
+```{r}
+
+# Calculate RMSE and R-squared on test set
+lasso_rmse <- RMSE(lasso_preds, test_data_ridge_lasso$shares)
+lasso_r_squared <- R2(lasso_preds, test_data_ridge_lasso$shares)
+lasso_adj_r_squared <- 1 - ((1 - lasso_r_squared) * (nrow(x_test_lasso) - 1)) / (nrow(x_test_lasso) - ncol(x_test_lasso) - 1)
+
+# Print results
+cat("RMSE:", lasso_rmse, "\n")
+cat("R-squared:", lasso_r_squared, "\n")
+cat("Adjusted R-squared:", lasso_adj_r_squared, "\n")
+
+```
+
+### Displaying the models results
+
+```{r}
+# Create data frame of results
+results_df <- data.frame(Model = c("Linear Regression", 
+                                   "Ridge Regression", 
+                                   "Lasso Regression"),
+                         
+                         R_Squared = c(lm_r_squared, 
+                                       ridge_r_squared, 
+                                       lasso_r_squared),
+                         Adjusted_R_Squared = c(lm_adj_r_squared, 
+                                                ridge_adj_r_squared, 
+                                                lasso_adj_r_squared))
+
+# Plot R-squared and adjusted R-squared for each model
+results_long <- results_df %>% pivot_longer(cols = c(R_Squared, 
+                                                     Adjusted_R_Squared),
+                                            names_to = "Metric",
+                                            values_to = "Value")
+
+ggplot(results_long, aes(x = Model, y = Value, fill = Metric)) +
+  geom_bar(stat = "identity", color = "black", position = position_dodge()) +
+  xlab("Model") +
+  ylab("") +
+  ggtitle("Comparison of R-squared and Adjusted R-squared")
+```
+
+```{r}
+# Compute R-squared and adjusted R-squared for each model
+rmse <- c(lm_rmse, ridge_rmse, lasso_rmse)
+rsquared <- c(lm_r_squared, ridge_r_squared, lasso_r_squared)
+adj_rsquared <- c(lm_adj_r_squared, ridge_adj_r_squared, lasso_adj_r_squared)
+
+# Create a data frame with the R-squared and adjusted R-squared for each model
+df_reg_results <- data.frame(Model = c("Linear Regression", "Ridge Regression", "Lasso Regression"),
+                 RMSE = rmse,
+                 R_Squared = rsquared,
+                 Adj_R_Squared = adj_rsquared)
+
+df_reg_results
+```
+
+The table summarizes the performance metrics of three regression models: Linear Regression, Ridge Regression, and Lasso Regression.
+
+-   The Linear Regression model has an RMSE of 1.315798e-15, an R-Squared value of 1.0000000, and an adjusted R-Squared value of 1.0000000.
+
+-   The Ridge Regression model has an RMSE of 9.962113e+00, an R-Squared value of 0.9999995, and an adjusted R-Squared value of 0.9999995.
+
+-   The Lasso Regression model has an RMSE of 9.129431e+00, an R-Squared value of 0.9999996, and an adjusted R-Squared value of 0.9999996.
+
+```{r}
+# Plot the R-squared and adjusted R-squared for each model
+ggplot(df_reg_results, aes(x = R_Squared, y = Adj_R_Squared, label = Model)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "R-squared", y = "Adjusted R-squared") +
+  ggtitle("Comparison of Model Performance")
+```
+
+### Summary of regression models
+
+All models have very high R-squared and adjusted R-squared values, indicating that they fit the data very well. The Ridge Regression and Lasso Regression models have higher RMSE values than the Linear Regression model, indicating that they have slightly higher prediction errors.
+
+
+# Conclusion
+
+The dataset posed a challenge due to its lack of cleanliness. The critical step was the time-consuming data cleaning process. Through this experience, I gained knowledge in data analysis, handling missing values and outliers, selecting and scaling features, converting categorical features to numerical ones, employing regularization techniques, and fine-tuning model hyperparameters to achieve optimal outcomes.
+
+## References
+
+<https://docs.oracle.com/en/database/oracle/machine-learning/oml4sql/21/dmprg/about-attributes.html#GUID-7AAB55D5-6711-4BE5-A0CE-B2A6B68ED689>
+
+<https://www.datacamp.com/tutorial/multiple-linear-regression-r-tutorial>
+
